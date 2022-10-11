@@ -15,12 +15,8 @@ namespace Checkers_GAME
             board.play();
         }
     }//TODO setup program to different board games
-    //interface IGameRules
-    //{
-    //    void createGameBoard();
-
-    //}
-    //class Checkers : Board, IGameRules
+    
+    //class Checkers : Board
     //{
     //}
 
@@ -29,7 +25,7 @@ namespace Checkers_GAME
         string letters; //on board
         bool currentPlayer; // black/white
         public int blackOnBoard, whiteOnBoard; //figure count
-        public Imove[][] board;
+        public Figure[][] board;
 
         public int idsCount; //for position setter
         ///test board constructor
@@ -47,8 +43,8 @@ namespace Checkers_GAME
             idsCount++;
             if (color) whiteOnBoard++;
             else blackOnBoard++;
-            ((Figure)board[row][col]).setPosition_RowCol(this);
-            //  Console.WriteLine(board[row][col].ToString() + "row:" + ((Figure)board[row][col]).row + " col: " + ((Figure)board[row][col]).col);
+            (board[row][col]).setPosition_RowCol(this);
+            //  Console.WriteLine(board[row][col].ToString() + "row:" + (board[row][col]).row + " col: " + (board[row][col]).col);
         } //TODO *** INTERFACE Igame
         void createGameBoard()
         {
@@ -173,9 +169,9 @@ namespace Checkers_GAME
 
 
             bool moveMade = false;
-            int[] figPos = new int[2];
-            int[] movPos = new int[2];
-            bool mustCapture = false;
+            int[] figPos ;
+            int[] movPos ;
+            bool mustCapture;
             if (!endGame())
             {
 
@@ -194,7 +190,7 @@ namespace Checkers_GAME
                     }
                     else
                     {
-                        Imove figRef = board[figPos[0]][figPos[1]];
+                        Figure figRef = board[figPos[0]][figPos[1]];
 
                         mustCapture = canEat_any();
                         //Console.WriteLine("MUST EAT: " + mustEat);
@@ -253,7 +249,7 @@ namespace Checkers_GAME
                                 //{
 
                                 printPrettyBoard(prettyBoard(availableMoves));
-                                msg = ((Figure)figRef).ToString() + " to where? :";
+                                msg = figRef.ToString() + " to where? :";
                                 movPos = legalInput_Handler(msg, false);
                                 // }
                                 // #endregion
@@ -289,12 +285,12 @@ namespace Checkers_GAME
 
                                                 Console.WriteLine("You may capture your opponents Checker!");
 
-                                                int[] delFigPos = ((Figure)figRef).getCell_figToDelete(movPos);
+                                                int[] delFigPos = figRef.getCell_figToDelete(movPos);
                                                 transformed = figRef.capture(movPos, new int[] { delFigPos[0], delFigPos[1] },this);
 
                                                 printPrettyBoard(prettyBoard());
 
-                                                Imove afterMov_figRef = board[movPos[0]][movPos[1]];
+                                                Figure afterMov_figRef = board[movPos[0]][movPos[1]];
 
                                                 bool captureMore = afterMov_figRef.canCapture(this);
                                                 moveCounterTillEndgame = 15; //unset counter if capture was made to initial state
@@ -307,7 +303,7 @@ namespace Checkers_GAME
                                                     {
                                                         moveMade = true;
 
-                                                        ((Figure)afterMov_figRef).deleteFigureFromCell(new int[] { movPos[0], movPos[1] }, true,this);
+                                                        afterMov_figRef.deleteFigureFromCell(new int[] { movPos[0], movPos[1] }, true,this);
 
                                                         printPrettyBoard(prettyBoard());
                                                         Console.WriteLine("BURN!");
@@ -406,10 +402,10 @@ namespace Checkers_GAME
         //-CONSTRUCT BOARD display
         void initiateBoard()
         {
-            board = new Imove[8][];
+            board = new Figure[8][];
             for (int i = 0; i < board.Length; i++)
             {
-                board[i] = new Imove[8];
+                board[i] = new Figure[8];
             }
         }
         string[][] emptyBoard()
@@ -430,7 +426,7 @@ namespace Checkers_GAME
                         }
                         else
                         {
-                            string inp = board[i][j] == null ? "XX" : ((Figure)board[i][j]).Unicode + " ";
+                            string inp = board[i][j] == null ? "XX" : board[i][j].Unicode + " ";
                             emptyB[i][j] = "| " + inp + " ";
 
                         }
@@ -449,7 +445,7 @@ namespace Checkers_GAME
                         }
                         else
                         {
-                            string inp = board[i][j] == null ? "XX" : ((Figure)board[i][j]).Unicode;
+                            string inp = board[i][j] == null ? "XX" : board[i][j].Unicode;
                             emptyB[i][j] = "| " + inp + " ";
 
                         }
@@ -467,7 +463,7 @@ namespace Checkers_GAME
                 for (int j = 0; j < 8; j++)
                 {
 
-                    if (board[i][j] != null) prettyB[i][j] = "| " + ((Figure)board[i][j]).Unicode + "  ";
+                    if (board[i][j] != null) prettyB[i][j] = "| " + board[i][j].Unicode + "  ";
                     else prettyB[i][j] = "|    ";
                 }
             }
@@ -536,7 +532,7 @@ namespace Checkers_GAME
             {
                 for (int j = 0; j < 8 && counter < checkersCount; j++)
                 {
-                    if (board[i][j] != null && ((Figure)board[i][j]).color == currentPlayer)
+                    if (board[i][j] != null && board[i][j].color == currentPlayer)
                     {
                         if (board[i][j].canCapture(this))
                         {
@@ -560,7 +556,7 @@ namespace Checkers_GAME
             {
                 for (int j = 0; j < 8 && counter < checkersCount; j++)
                 {
-                    if (board[i][j] != null && ((Figure)board[i][j]).color == currentPlayer)
+                    if (board[i][j] != null && board[i][j].color == currentPlayer)
                     {
                         if (board[i][j].canMove(this))
                         {
@@ -579,7 +575,7 @@ namespace Checkers_GAME
         //CHECKS IF FIGURE ON THE BOARD BELONGS TO SPECIFIED PLAYER 
         public bool pieceBelongsToPlayer(int[] pos, bool color)
         {
-            return board[pos[0]][pos[1]] != null && ((Figure)board[pos[0]][pos[1]]).color == color;
+            return board[pos[0]][pos[1]] != null && board[pos[0]][pos[1]].color == color;
 
         }
 
@@ -737,8 +733,13 @@ namespace Checkers_GAME
 
     class Figure
     {
+        public virtual bool canCapture(Board board) { return true; }
+        public virtual bool canMove(Board board) { return true; }
 
-        //protected Board currBoardObj;
+        public virtual int[][] availablePositions_toCapture(Board board) { return null; }
+        public virtual int[][] availablePositions_toMove(Board board) { return null; }
+        public virtual bool capture(int[] capPos, int[] delPos, Board board) { return true; }
+        public virtual void move(int[] movPos, Board board) {  }
         public bool color;
         public string Unicode;
         protected string figName;
@@ -779,8 +780,7 @@ namespace Checkers_GAME
             {
                 for (int j = 0; j < boardObj.board[i].Length && !found; j++)
                 {
-                    Figure obj = boardObj.board[i][j] as Figure;
-                    if (Equals(obj))
+                    if (Equals(boardObj.board[i][j]))
                     {
 
                         row = i;
@@ -835,7 +835,7 @@ namespace Checkers_GAME
         {
             if (adjustCount)
             {
-                bool color = ((Figure)boardObj.board[delPos[0]][delPos[1]]).color;
+                bool color = (boardObj.board[delPos[0]][delPos[1]]).color;
                 if (color) boardObj.whiteOnBoard--;
                 else boardObj.blackOnBoard--;
 
@@ -846,34 +846,34 @@ namespace Checkers_GAME
         }
         protected void moveFigureToNewCell(int[] movPos , Board boardObj)
         {
-            Imove[][] board= boardObj.board;
-            Imove fig = board[row][col];
+            Figure[][] board= boardObj.board;
+            Figure fig = board[row][col];
             board[movPos[0]][movPos[1]] = fig;
             deleteFigureFromCell(new int[] { row, col }, false,boardObj);
-            ((Figure)board[movPos[0]][movPos[1]]).setPosition_RowCol(boardObj);
+            board[movPos[0]][movPos[1]].setPosition_RowCol(boardObj);
         }
 
 
     }
 
-    class CheckersQueen  : Figure, Imove
+    class CheckersQueen  : Figure
     {
 
 
         public CheckersQueen(bool player) : base(player, (player ? "\u265B" : "\u2655"), "Queen") { }
 
-        public int[][] availablePositions_toCapture(Board boardObj)
+        public override int[][] availablePositions_toCapture(Board boardObj)
         {
+            Figure[][] board= boardObj.board;
             int[][] result;
             int[][] availableCellsAroundFig = getLegalCellsAround(1, false, row, col);
             string availableIndexes = "";
-            Imove[][] board = boardObj.board;
-
+            
             //adds all available Jumps from the position to a string that will contain all directions positions
             void addIndexes_loop(int[] rc, int upDon, int lR)
             {
                 int r = rc[0]; int c = rc[1];
-                if (board[r][c] != null && ((Figure)board[r][c]).color != color)
+                if (board[r][c] != null && board[r][c].color != color)
                 {
                     bool inRange = (r + upDon >= 0 && r + upDon < board.Length) && (c + lR >= 0 && c + lR < board[0].Length);
                     if (inRange && board[r + upDon][c + lR] == null)
@@ -921,12 +921,12 @@ namespace Checkers_GAME
             return result;
         }
 
-        public int[][] availablePositions_toMove(Board boardObj)
+        public override int[][] availablePositions_toMove(Board boardObj)
         {
             int[][] result;
             int[][] availableCellsAroundFig = getLegalCellsAround(1, false, row, col);
             string availables = "";
-            Imove[][] board = boardObj.board;
+            Figure[][] board = boardObj.board;
             void loop(int[] rc, int upDon, int lR)
             {
                 int r = rc[0]; int c = rc[1];
@@ -970,20 +970,20 @@ namespace Checkers_GAME
             return result;
         }
 
-        public bool canCapture(Board boardObj)
+        public override bool canCapture(Board boardObj)
         {
             int[][] arr = availablePositions_toCapture(boardObj);
 
             return arr[0] != null;
         }
 
-        public bool canMove(Board boardObj)
+        public override bool canMove(Board boardObj)
         {
             int[][] arr = availablePositions_toMove(boardObj);
             return arr[0] != null;
         }
 
-        public bool capture(int[] capPos, int[] figDelete , Board boardObj)
+        public override bool capture(int[] capPos, int[] figDelete , Board boardObj)
         {
 
             moveFigureToNewCell(capPos,boardObj);
@@ -992,28 +992,28 @@ namespace Checkers_GAME
             return false;//needed for checker transformation (queen doesn't change)
         }
 
-        public void move(int[] movPos, Board boardObj)
+        public override void move(int[] movPos, Board boardObj)
         {
             moveFigureToNewCell(movPos, boardObj);
         }
     }
-    class Checker : Figure, Imove
+    class Checker : Figure
     {
         public Checker(bool player) : base(player, (player ? "\u265C" : "\u2656"), "Checker") { }
 
 
-        public bool canMove(Board boardObj)
+        public override bool canMove(Board boardObj)
         {
             bool allNull = Array.TrueForAll(availablePositions_toMove(boardObj), (x) => x == null);
             return !allNull;
         }
 
-        public bool canCapture(Board boardObj)
+        public override bool canCapture(Board boardObj)
         {
             bool allNull = Array.TrueForAll(availablePositions_toCapture(boardObj), (x) => x == null);
             return !allNull;
         }
-        public int[][] availablePositions_toCapture(Board boardObj)
+        public override int[][] availablePositions_toCapture(Board boardObj)
         {
             //RETURNS NULL FOR illegal moves (out of board) - or indexers //upL, upR, DownL, DownR
             int[][] available_JumpPositions = getLegalCellsAround(2, true, row, col);
@@ -1035,14 +1035,14 @@ namespace Checkers_GAME
 
 
         }
-        public int[][] availablePositions_toMove(Board boardObj)
+        public override int[][] availablePositions_toMove(Board boardObj)
         {
             //returns legal move cells within the board range
             int[][] available_MovePositions = getLegalCellsAround(1, true, row, col);
             int[][] result = new int[2][];
             if (available_MovePositions != null)
             {
-                Imove obj = null;
+                Figure obj = null;
                 for (int i = 0; i < available_MovePositions.Length; i++)
                 {
                     if (available_MovePositions[i] != null)
@@ -1058,8 +1058,8 @@ namespace Checkers_GAME
 
             return result;
         }
-
-        public bool capture(int[] movPos, int[] delPos, Board boardObj)
+        
+        public override bool capture(int[] movPos, int[] delPos, Board boardObj)
         {
             bool transformed = false;
 
@@ -1076,7 +1076,7 @@ namespace Checkers_GAME
             return transformed;
         }
 
-        public void move(int[] movPos , Board boardObj)
+        public override void move(int[] movPos , Board boardObj)
         {
             if (movPos[0] == 0 || movPos[0] == boardObj.board.Length - 1)
             {
@@ -1091,16 +1091,5 @@ namespace Checkers_GAME
 
     }
 
-    interface Imove
-    {
-        bool canCapture(Board board);
-        bool canMove(Board board);
-
-        int[][] availablePositions_toCapture(Board board);
-        int[][] availablePositions_toMove(Board board);
-        bool capture(int[] capPos, int[] delPos , Board board);
-        void move(int[] movPos, Board board);
-
-    }
 }
 
