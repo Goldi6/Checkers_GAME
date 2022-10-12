@@ -15,7 +15,7 @@ namespace Checkers_GAME
         }
     }//TODO setup program to different board games
     //TODO allow any type direction (b1 & 1b)
-    //TODO customize rules (*nextTurn if man transformed to King)
+    //TODO customize rules (*nextTurn if man transformed to King | *force capture |*highlight available moves)
 
     class Checkers : BoardGame
     {
@@ -769,8 +769,15 @@ namespace Checkers_GAME
 
         public virtual int[][] AvailablePositions_toCapture(BoardGame board) { return null; }
         public virtual int[][] AvailablePositions_toMove(BoardGame board) { return null; }
-        public virtual bool Capture(int[] capPos, int[] delPos, BoardGame board) { return true; }
-        public virtual bool Move(int[] movPos, BoardGame board) { return false; }
+        public virtual bool Capture(int[] movPos, int[] capPos, BoardGame boardObj)
+        {
+            boardObj.deleteFigureFromCell(capPos, true);
+            return Move(movPos, boardObj);
+        }
+        public virtual bool Move(int[] movPos, BoardGame boardObj)
+        {
+            return _moveFigureToNewCell(movPos, boardObj);
+        }
 
 
         public string Unicode;
@@ -865,13 +872,17 @@ namespace Checkers_GAME
             return new int[] { delFig_r, delFig_c };
         }
 
-        protected void _moveFigureToNewCell(int[] movPos, BoardGame boardObj)
+        protected bool _moveFigureToNewCell(int[] movPos, BoardGame boardObj, bool KingTransformed=false)
         {
             Figure[][] board = boardObj.board;
             Figure fig = board[_Row][_Col];
-            board[movPos[0]][movPos[1]] = fig;
+            if (KingTransformed)
+                boardObj.placePieceOnBoard(Color, movPos[0], movPos[1], "king");
+            else
+                board[movPos[0]][movPos[1]] = fig;
             boardObj.deleteFigureFromCell(new int[] { _Row, _Col }, false);
             board[movPos[0]][movPos[1]].setPosition_RowCol(boardObj);
+            return KingTransformed;
         }
 
 
@@ -1011,21 +1022,7 @@ namespace Checkers_GAME
 
         /// /////////////////
 
-        public override bool Capture(int[] capPos, int[] figDelete, BoardGame boardObj)
-        {
-
-            _moveFigureToNewCell(capPos, boardObj);
-
-            boardObj.deleteFigureFromCell(figDelete, true);
-            return false;//needed for checker transformation (king doesn't change)
-        }
-
-        public override bool Move(int[] movPos, BoardGame boardObj)
-        {
-            _moveFigureToNewCell(movPos, boardObj);
-            return false;//needed for checker transformation (king doesn't change)
-
-        }
+       
     }
     class Checker : Figure
     {
@@ -1045,11 +1042,11 @@ namespace Checkers_GAME
                 {
                     if (available_CapturePositions[i] != null && available_JumpPositions[i] != null)
                     {
-                        bool jumpPositionIsEmpty = boardObj.board[available_JumpPositions[i][0]][available_JumpPositions[i][1]] ==null;
+                        bool jumpPositionIsEmpty = boardObj.board[available_JumpPositions[i][0]][available_JumpPositions[i][1]] == null;
                         Figure capturePosObj = boardObj.board[available_CapturePositions[i][0]][available_CapturePositions[i][1]];
-                        bool capturePositionBelongsToOponent = capturePosObj!=null?capturePosObj.Color != Color:false;//instead OF :  boardObj.pieceBelongsToPlayer(available_CapturePositions[i], !Color)
-                        
-                        if ( capturePositionBelongsToOponent && jumpPositionIsEmpty)
+                        bool capturePositionBelongsToOponent = capturePosObj != null ? capturePosObj.Color != Color : false;//instead OF :  boardObj.pieceBelongsToPlayer(available_CapturePositions[i], !Color)
+
+                        if (capturePositionBelongsToOponent && jumpPositionIsEmpty)
                             availableMoves[i] = available_JumpPositions[i];
                     }
                 }
@@ -1082,27 +1079,20 @@ namespace Checkers_GAME
 
         }
 
-        public override bool Capture(int[] movPos, int[] delPos, BoardGame boardObj)
-        {
-            boardObj.deleteFigureFromCell(delPos, true);
-            return Move(movPos, boardObj);
-        }
+        
 
         public override bool Move(int[] movPos, BoardGame boardObj)
         {
-            bool transformed = false;
+            bool transformedToKing = false;
             if (movPos[0] == 0 || movPos[0] == boardObj.board.Length - 1)
-            {
-                boardObj.placePieceOnBoard(Color, movPos[0], movPos[1], "king");
-                boardObj.deleteFigureFromCell(new int[] { _Row, _Col }, false);
-                transformed = true;
-
-            }
-            else _moveFigureToNewCell(movPos, boardObj);
-            return transformed;
+                transformedToKing = true;
+            return _moveFigureToNewCell(movPos, boardObj,transformedToKing);
+            
 
         }
     }
+    //class Pawn : Checker { }
+    //class Bishop :King {}
 }
 
 
