@@ -2,7 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+
+//Continental draughts
+//  *can eat both directions
+
+//English draughts
+//  *most kings wins
+// *king goes one step
+
 namespace Checkers_GAME
 {
     internal class Program
@@ -30,7 +39,7 @@ namespace Checkers_GAME
         void nextMove()
         {
             endTurn = true;
-            _currPlayerColor = !_currPlayerColor;
+            _currPlayerIsWhite = !_currPlayerIsWhite;
             _GameLoop();
         }
         protected override void _GameLoop()
@@ -49,7 +58,7 @@ namespace Checkers_GAME
 
 
                     //get player position input
-                    string msg = $"{(_currPlayerColor ? "White" : "Black")} players turn! enter figure position to move (example - 2D):\nYou may end this game by typing 'resign' or ask your oponent for a tie by typing 'tie'. ";
+                    string msg = $"{(_currPlayerIsWhite ? "White" : "Black")} players turn! enter figure position to move (example - 2D):\nYou may end this game by typing 'resign' or ask your oponent for a tie by typing 'tie'. ";
                     figPos = _legalInput_Handler(msg, false);
                     //if returns null means game ended (tie/resign)!
                     if (figPos == null)
@@ -64,13 +73,13 @@ namespace Checkers_GAME
                         //Console.WriteLine("MUST EAT: " + mustEat);
 
 
-                        if (figRef.Color != _currPlayerColor)
+                        if (figRef.Color != _currPlayerIsWhite)
                         {
-                            _Print_illegalInput($"you did not select your {(_currPlayerColor ? "White" : "Black")} checker... ");
+                            _Print_illegalInput($"you did not select your {(_currPlayerIsWhite ? "White" : "Black")} checker... ");
                         }
                         else if (mustCapture && !figRef.CanCapture(this))
                         {
-                            _Print_illegalInput($"you must eat opponents {(!_currPlayerColor ? "White" : "Black")} checker! select another checker... ");
+                            _Print_illegalInput($"you must eat opponents {(!_currPlayerIsWhite ? "White" : "Black")} checker! select another checker... ");
 
                         }
                         else if (!mustCapture && !figRef.CanMove(this))
@@ -242,7 +251,7 @@ namespace Checkers_GAME
             string msg;
             while (!doneWithInput)
             {
-                builderMsg = $"{(_currPlayerColor ? "White" : "Black")} {(builder_isKing ? "King" : "Checker")} position: \n(type {(builder_isKing ? "'checker'" : "'king'")} to switch figure ,type {(_currPlayerColor ? "'black'" : "'white'")} to continue entering {(_currPlayerColor ? "Black" : "White")} positions 'Done' to start game 'Delete' to delete mode)\n";
+                builderMsg = $"{(_currPlayerIsWhite ? "White" : "Black")} {(builder_isKing ? "King" : "Checker")} position: \n(type {(builder_isKing ? "'checker'" : "'king'")} to switch figure ,type {(_currPlayerIsWhite ? "'black'" : "'white'")} to continue entering {(_currPlayerIsWhite ? "Black" : "White")} positions 'Done' to start game 'Delete' to delete mode)\n";
                 msg = _builderDeleteMode ? deleteMsg : builderMsg;
                 int[] pos = _legalInput_Handler(msg, true);
                 if (pos == null)
@@ -252,14 +261,14 @@ namespace Checkers_GAME
 
                 else if (pos.Length == 2 && isBlackCellSelected(pos) && !_builderDeleteMode)
                 {
-                    if (((_currPlayerColor && pos[0] == board.Length) || (!_currPlayerColor && pos[0] == 0)) && !builder_isKing)
+                    if (((_currPlayerIsWhite && pos[0] == board.Length) || (!_currPlayerIsWhite && pos[0] == 0)) && !builder_isKing)
                     {
                         Console.WriteLine(" *** ILLEGAL:  you should select a king figure to place in this position\n");
                     }
                     else
                     {
                         string piece = builder_isKing ? "king" : "";
-                        placePieceOnBoard(_currPlayerColor, pos[0], pos[1], piece);
+                        placePieceOnBoard(_currPlayerIsWhite, pos[0], pos[1], piece);
                         _PrintPrettyBoard(_EmptyBoard_construct());
 
                     }
@@ -281,8 +290,8 @@ namespace Checkers_GAME
                         starts = starts.Trim().ToLower();
                         switch (starts)
                         {
-                            case "black": _currPlayerColor = false; doneWithInput = true; break;
-                            case "white": _currPlayerColor = true; doneWithInput = true; break;
+                            case "black": case "b": _currPlayerIsWhite = false; doneWithInput = true; break;
+                            case "white": case "w": _currPlayerIsWhite = true; doneWithInput = true; break;
                             default: Console.WriteLine("ILLEGAL INPUT.\n"); break;
                         }
                     }
@@ -298,18 +307,11 @@ namespace Checkers_GAME
 
         protected override int[] _addBuilderUserInputOptions(string input)
         {
-
-            if ((input == "king" || input == "checker"))
-            {
-                if (input == "king")
-                    builder_isKing = true;
-                else
-                    builder_isKing = false;
-                _builderDeleteMode = false;
-                return null;
+            switch (input) {
+                case "king": case "k": builder_isKing = true; return null;
+                case "man": case "m": builder_isKing = false; return null;
+                default: return new int[1];
             }
-
-            else return new int[1];
         }
 
     }
@@ -326,7 +328,7 @@ namespace Checkers_GAME
         ///??? Designer : AssemblestandardGame >>>||| Interface I_practice 
         /// </summary>
         string _letters; //on board
-        protected bool _currPlayerColor; // black/white
+        protected bool _currPlayerIsWhite; // black/white
         public int blackOnBoard, whiteOnBoard; //figure count
         public Figure[][] board;
         protected int _boardSize;
@@ -345,7 +347,7 @@ namespace Checkers_GAME
         }
         public BoardGame(bool playerThatStartsIsWhite, int moveCounterForMovesWithNoChange, bool standardBoardSize)//TODO add size option
         {
-            _currPlayerColor = playerThatStartsIsWhite;
+            _currPlayerIsWhite = playerThatStartsIsWhite;
             _letters = "     A    B    C    D    E    F    G    H";
             _boardSize = 8;
             if (!standardBoardSize)
@@ -523,75 +525,83 @@ namespace Checkers_GAME
         protected int[] _legalInput_Handler(string msg, bool builder)
         {
             Console.WriteLine(msg);
-            string pos = Console.ReadLine();
+            string input = Console.ReadLine();
+            Regex rx = new Regex(@"(^(10|\d)[a-j]$)|(^[a-j](10|\d)$)");
 
 
-            pos = pos.Trim().ToLower();
-            int column;
+            input = input.Trim().ToLower();
             string correction = "try looking at  the board and use only the row|column characters...or use instruction options";
             int[] corrector()
             {
                 _Print_illegalInput(correction); return _legalInput_Handler(msg, builder);
             }
 
-            if (builder)
+            if (rx.IsMatch(input))
             {
-                int[] builderResult = _addBuilderUserInputOptions(pos);
-                if (builderResult == null)
-                    return null;
-            }
+                byte[] asciiBytes = Encoding.ASCII.GetBytes(input);
 
-            if ((pos == "white" || pos == "black") && builder)
-            {
-                _currPlayerColor = pos == "white" ? true : false;
-                _builderDeleteMode = false;
-                return null;
-            }
-            else if (pos == "done" && builder)
-            {
-                _builderDeleteMode = false;
-                return new int[1] { 1 };
-            }
-            else if (pos == "delete" && builder)
-            {
-                _builderDeleteMode = true;
-                return null;
-            }
-
-            else if (pos == "resign" && !builder)
-            {
-                if (!Resign())
-                    return new int[2] { board.Length, board[0].Length };
-                else return null;
-            }
-            else if (pos == "tie" && !builder)
-            {
-                if (!SuggestTie())
-                    return new int[2] { board.Length, board[0].Length };
-                else return null;
-            }
-
-            else if (pos.Length == 2)
-            {
                 //TODO: adjust for bigger board
-                switch (pos[1])
+                char letter = ' ';
+                string number = "";
+                foreach (char l in asciiBytes)
                 {
-                    default: return corrector();
-                    case 'a': column = 0; break;
-                    case 'b': column = 1; break;
-                    case 'c': column = 2; break;
-                    case 'd': column = 3; break;
-                    case 'e': column = 4; break;
-                    case 'f': column = 5; break;
-                    case 'g': column = 6; break;
-                    case 'h': column = 7; break;
+                    if (Char.IsDigit(l)) number += Convert.ToChar(l) + "";
+                    if (Char.IsLetter(l)) letter = l;
                 }
-                if (Char.IsDigit(pos[0]) && pos[0] != '0' && pos[0] != '9')
-                    return new int[2] { int.Parse(pos[0] + "") - 1, column };
-                else return corrector();
-
+                int num = int.Parse(number);
+                if (_boardSize != 10 && (num > 8 || letter == 'i' || letter == 'j')) return corrector();
+                else
+                {
+                    int column = Convert.ToByte(letter) - 97;
+                    return new int[2] { num - 1, column };
+                }
             }
-            else return corrector();
+            else
+            {
+                if (!builder)
+                {
+                    switch (input) //game options
+                    {
+                        case "resign": case "r":
+                            if (!Resign())
+                                return new int[2] { board.Length, board[0].Length };
+                            else return null;
+                        case "tie": case "t":
+                            if (!SuggestTie())
+                                return new int[2] { board.Length, board[0].Length };
+                            else return null;
+                        default: return corrector();
+                    }
+                }
+                else
+                {
+                    switch (input) //board constructor options
+                    {
+                        case "white": case "w":
+                            _currPlayerIsWhite = true;
+                            _builderDeleteMode = false; return null;
+                        case "black":
+                        case "b":
+                            _currPlayerIsWhite = false;
+                            _builderDeleteMode = false; return null;
+                        case "delete": case "del":
+                            _builderDeleteMode = true;
+                            return null;
+                        case "reset": case "r":
+                            _InitiateBoard();
+                            _PrintPrettyBoard(_EmptyBoard_construct());
+                            return null;
+                        case "done":
+                            _builderDeleteMode = false;
+                            return new int[1] { 1 };
+                        default:
+                            int[] builderResult = _addBuilderUserInputOptions(input);
+                            if (builderResult == null)
+                                return null;
+                            else return corrector();
+                    }
+                }
+            }
         }
         protected void _Print_illegalInput(string correction = "")
         {
@@ -643,7 +653,7 @@ namespace Checkers_GAME
             }
             else if (!_CanAnyFigCapture() && !_CanAnyFigMove())
             {
-                Console.WriteLine($"Game over! no More Moves! {(!_currPlayerColor ? "white" : "black")} wins!");
+                Console.WriteLine($"Game over! no More Moves! {(!_currPlayerIsWhite ? "white" : "black")} wins!");
 
                 return true;
             }
@@ -659,8 +669,8 @@ namespace Checkers_GAME
         }
         bool Resign()
         {
-            string player = _currPlayerColor ? "White" : "Black";
-            string oponent = !_currPlayerColor ? "White" : "Black";
+            string player = _currPlayerIsWhite ? "White" : "Black";
+            string oponent = !_currPlayerIsWhite ? "White" : "Black";
             if (_Verify("are you sure you want to resign?"))
             {
                 Console.WriteLine($"Game ended. {(player)} resigned! {oponent} wins!");
@@ -687,13 +697,13 @@ namespace Checkers_GAME
         //play Methods
         bool _ifBoardCanEatOrCapture(bool askCanMove)
         {
-            int checkersCount = _currPlayerColor ? whiteOnBoard : blackOnBoard;
+            int checkersCount = _currPlayerIsWhite ? whiteOnBoard : blackOnBoard;
 
             foreach (Figure[] boardRow in board)
             {
                 foreach (Figure fig in boardRow)
                 {
-                    if (fig != null && fig.Color == _currPlayerColor)
+                    if (fig != null && fig.Color == _currPlayerIsWhite)
                     {
                         bool tester = askCanMove ? fig.CanMove(this) : fig.CanCapture(this);
                         checkersCount--;
@@ -787,6 +797,7 @@ namespace Checkers_GAME
         string _FigId;
         protected int _Row;
         protected int _Col;
+        public int pieceValue;
 
         public override bool Equals(object obj)
         {
@@ -804,11 +815,12 @@ namespace Checkers_GAME
         }
 
 
-        public Figure(bool isWhitePlayer, string figureCode, string figureName)
+        public Figure(bool isWhitePlayer, string figureCode, string figureName , int pieceVal=1)
         {
             Color = isWhitePlayer;
             _FigName = figureName;
             Unicode = figureCode;
+            pieceValue = pieceVal;
 
         }
 
@@ -872,7 +884,7 @@ namespace Checkers_GAME
             return new int[] { delFig_r, delFig_c };
         }
 
-        protected bool _moveFigureToNewCell(int[] movPos, BoardGame boardObj, bool KingTransformed=false)
+        protected bool _moveFigureToNewCell(int[] movPos, BoardGame boardObj, bool KingTransformed = false)
         {
             Figure[][] board = boardObj.board;
             Figure fig = board[_Row][_Col];
@@ -892,7 +904,7 @@ namespace Checkers_GAME
     class CheckersKing : Figure
     {
 
-        public CheckersKing(bool player) : base(player, (player ? "\u265A" : "\u2654"), "King") { }
+        public CheckersKing(bool player) : base(player, (player ? "\u265A" : "\u2654"), "King",2) { }
 
         /// ////////////////
         int[][] _StringToArray(string availables)
@@ -915,28 +927,20 @@ namespace Checkers_GAME
 
             string availableIndexes = "";
             string str = "";
-            if (availableCellsAroundFig[0] != null)
+            int index = 0;
+            for (int y = -1; y <= 1; y += 2)
             {
-                str = (loopFunc(availableCellsAroundFig[0], -1, -1));
-                availableIndexes += str;
-            }
-            if (availableCellsAroundFig[1] != null)
-            {
-                str = loopFunc(availableCellsAroundFig[1], -1, 1);
-                availableIndexes += str;
-
-            }
-            if (availableCellsAroundFig[2] != null)
-            {
-                str = loopFunc(availableCellsAroundFig[2], 1, -1);
-                availableIndexes += str;
-
-            }
-            if (availableCellsAroundFig[3] != null)
-            {
-                str = loopFunc(availableCellsAroundFig[3], 1, 1);
-                availableIndexes += str;
-
+                int x = -1;
+                for (; x <= 1; x += 2)
+                {
+                    int[] cellIndex = availableCellsAroundFig[index];
+                    if (cellIndex != null)
+                    {
+                        str = (loopFunc(cellIndex, y, x));
+                        availableIndexes += str;
+                    }
+                    index++;
+                }
             }
             return availableIndexes;
         }
@@ -1022,7 +1026,7 @@ namespace Checkers_GAME
 
         /// /////////////////
 
-       
+
     }
     class Checker : Figure
     {
@@ -1079,15 +1083,15 @@ namespace Checkers_GAME
 
         }
 
-        
+
 
         public override bool Move(int[] movPos, BoardGame boardObj)
         {
             bool transformedToKing = false;
             if (movPos[0] == 0 || movPos[0] == boardObj.board.Length - 1)
                 transformedToKing = true;
-            return _moveFigureToNewCell(movPos, boardObj,transformedToKing);
-            
+            return _moveFigureToNewCell(movPos, boardObj, transformedToKing);
+
 
         }
     }
